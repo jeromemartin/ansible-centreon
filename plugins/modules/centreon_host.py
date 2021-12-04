@@ -80,11 +80,12 @@ requirements:
   - Python Centreon API
 author:
     - Guillaume Watteeux
+    - Jérôme Martin
 '''
 
 EXAMPLES = '''
 # Add host
- - centreon_host:
+ - community.centreon.centreon_host:
      url: 'https://centreon.company.net/centreon'
      username: 'ansible_api'
      password: 'strong_pass_from_vault'
