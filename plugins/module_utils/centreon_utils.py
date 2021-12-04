@@ -47,9 +47,15 @@ def update_macros(obj, macros, data):
 def update_params(obj, params, data):
     _, _ = obj.getparams()
     for k in params:
-        if k.get('value') != obj.params[k.get('name')]:
-            s, h = obj.setparam(k.get('name'), k.get('value'))
+        pname = k.get('name')
+        if not pname:
+            raise Exception('Param with empty name!')
+
+        pvalue = k.get('value')
+        data.append(f"Setting parameter {pname}")
+        if pvalue != obj.params.get(pname):
+            s, h = obj.setparam(pname, pvalue)
             if s:
                 return True
             else:
-                raise Exception('Unable to set param %s: %s' % (k.get('name'), h))
+                raise Exception(f'Unable to set param {pname}: {h}')
