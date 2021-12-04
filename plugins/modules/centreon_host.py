@@ -131,7 +131,6 @@ else:
 
 
 def main():
-
     module = AnsibleModule(
         argument_spec=dict(
             url=dict(required=True),
@@ -155,21 +154,21 @@ def main():
     if not centreonapi_found or packaging.version.parse(centreonapi_version) < packaging.version.parse("0.2.0"):
         module.fail_json(msg="Python centreonapi module is required (>0.1.0)")
 
-    url             = module.params["url"]
-    username        = module.params["username"]
-    password        = module.params["password"]
-    name            = module.params["name"]
-    alias           = module.params["alias"]
-    ipaddr          = module.params["ipaddr"]
-    hosttemplates   = module.params["hosttemplates"]
-    instance        = module.params["instance"]
-    hostgroups      = module.params["hostgroups"]
-    params          = module.params["params"]
-    macros          = module.params["macros"]
-    state           = module.params["state"]
-    status          = module.params["status"]
-    applycfg        = module.params["applycfg"]
-    validate_certs  = module.params["validate_certs"]
+    url = module.params["url"]
+    username = module.params["username"]
+    password = module.params["password"]
+    name = module.params["name"]
+    alias = module.params["alias"]
+    ipaddr = module.params["ipaddr"]
+    hosttemplates = module.params["hosttemplates"]
+    instance = module.params["instance"]
+    hostgroups = module.params["hostgroups"]
+    params = module.params["params"]
+    macros = module.params["macros"]
+    state = module.params["state"]
+    status = module.params["status"]
+    applycfg = module.params["applycfg"]
+    validate_certs = module.params["validate_certs"]
 
     has_changed = False
 
@@ -177,13 +176,15 @@ def main():
         centreon = Centreon(url, username, password, check_ssl=validate_certs)
     except Exception as e:
         module.fail_json(
-            msg="Unable to connect to Centreon API: %s" % e.message
+            msg="Unable to connect to Centreon API: %s" % str(e)
         )
+        return
 
     try:
         st, poller = centreon.pollers.get(instance)
     except Exception as e:
-        module.fail_json(msg="Unable to get pollers: {}".format(e.message))
+        module.fail_json(msg="Unable to get pollers: {}".format(e))
+        return
 
     if not st and poller is None:
         module.fail_json(msg="Poller '%s' does not exists" % instance)
@@ -197,7 +198,7 @@ def main():
     if not host_state and state == "present":
         try:
             data.append("Add %s %s %s %s %s %s" %
-                        (name, alias, ipaddr,  instance, hosttemplates, hostgroups))
+                        (name, alias, ipaddr, instance, hosttemplates, hostgroups))
             centreon.hosts.add(
                 name,
                 alias,
@@ -212,10 +213,12 @@ def main():
             has_changed = True
             data.append("Add host: %s" % name)
         except Exception as e:
-            module.fail_json(msg='Create: %s - %s' % (e.message, data), changed=has_changed)
+            module.fail_json(msg='Create: %s - %s' % (e, data), changed=has_changed)
+            return
 
     if not host_state:
         module.fail_json(msg="Unable to find host %s " % name, changed=has_changed)
+        return
 
     if state == "absent":
         del_state, del_res = centreon.hosts.delete(host)
@@ -243,7 +246,7 @@ def main():
             has_changed = True
             data.append("Host enabled")
         else:
-            module.fail_json(msg='Unable to enable host %s: %s' % (host.name, d_state), changed=has_changed)
+            module.fail_json(msg='Unable to enable host %s: %s' % (host.name, e_state), changed=has_changed)
 
     if not host.address == ipaddr and ipaddr:
         s_state, s_res = host.setparam('address', ipaddr)
@@ -276,7 +279,8 @@ def main():
             for hgp in hostgroups:
                 if hgp.get('name') in hostgroup_list and hgp.get('state') == 'absent':
                     del_hostgroup.append(hgp.get('name'))
-                elif hgp.get('name') not in hostgroup_list and (hgp.get('state') == "present" or hgp.get('state') is None):
+                elif hgp.get('name') not in hostgroup_list and (
+                        hgp.get('state') == "present" or hgp.get('state') is None):
                     add_hostgroup.append(hgp.get('name'))
 
             if add_hostgroup:
@@ -308,9 +312,9 @@ def main():
             for tmpl in hosttemplates:
                 if tmpl.get('name') in template_list and tmpl.get('state') == "absent":
                     del_host_template.append(tmpl.get('name'))
-                elif tmpl.get('name') not in template_list\
+                elif tmpl.get('name') not in template_list \
                         and (tmpl.get('state') == "present"
-                        or tmpl.get('state') is None):
+                             or tmpl.get('state') is None):
                     add_host_template.append(tmpl.get('name'))
 
             if add_host_template:

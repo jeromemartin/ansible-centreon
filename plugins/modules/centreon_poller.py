@@ -105,13 +105,15 @@ def main():
         centreon = Centreon(url, username, password, check_ssl=validate_certs)
     except Exception as exc:
         module.fail_json(
-            msg="Unable to connect to Centreon API: %s" % exc.message
+            msg="Unable to connect to Centreon API: %s" % str(exc)
         )
+        return
 
     try:
         st, poller = centreon.pollers.get(instance)
     except Exception as e:
-        module.fail_json(msg="Unable to get pollers: {}".format(e.message))
+        module.fail_json(msg="Unable to get pollers: {}".format(e))
+        return
 
     if not st and poller is None:
         module.fail_json(msg="Poller '%s' does not exists" % instance)
