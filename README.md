@@ -8,7 +8,7 @@ An Ansible module to configure Centreon
 
 ## Requirements ##
 
-* Ansible >= 2.4.0 (ansible)
+* Ansible >= 2.9.0 (ansible)
 * centreonapi >= 0.1.3 
 
 ###Install ##
