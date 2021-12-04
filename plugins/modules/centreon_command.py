@@ -38,7 +38,7 @@ options:
     default: Central
   applycfg:
     description:
-      - Applycfg on poller
+      - Apply configuration on poller
     default: True
     choices: ['True','False']
   validate_certs:
@@ -46,27 +46,49 @@ options:
     default: yes
     description:
       - If C(no), SSL certificates will not be validated.
+  name:
+    description:
+      - Command name
+    type: str
+    required: True
+  type:
+    description: 
+      - type of command
+    choices: ['check', 'notif', 'misc', 'discovery']
+    default: 'check'
+    required: True
+  line:
+    description:
+      - Command line
+    type: str
+    required: True
+  state:
+    description:
+      - Create / Delete command on Centreon
+    default: present
+    choices: ['present', 'absent']
 requirements:
   - Python Centreon API
 author:
     - Guillaume Watteeux
+    - Jérôme Martin
 '''
 
 EXAMPLES = '''
 # Add host
- - centreon_poller:
-     url: 'https://centreon.company.net/centreon'
-     username: 'ansible_api'
-     password: 'strong_pass_from_vault'
-     instance: Central
-     action: applycfg
+- community.centreon.centreon_command:
+    url: "{{ centreon_url }}"
+    username: "{{ centreon_api_user }}"
+    password: "{{ centreon_api_pass }}"
+    name: check_pgsql
+    type: check
+    line: "$USER1$/$NRPECLIENT$ -H $HOSTADDRESS$ -p $NRPEPORT$ $NRPEEXTRAOPTIONS$ -t $NRPETIMEOUT$ -c check_pgsql -a $_SERVICEPOSTGRESUSERNAME$ $_SERVICEPOSTGRESPASSWORD$"
+  delegate_to: localhost
 '''
 
 # =============================================
 # Centreon module API Rest
 #
-
-
 try:
     from centreonapi.centreon import Centreon
     from centreonapi import __version__ as centreonapi_version
@@ -117,9 +139,7 @@ def main():
     try:
         centreon = Centreon(url, username, password, check_ssl=validate_certs)
     except Exception as e:
-        module.fail_json(
-            msg="Unable to connect to Centreon API: %s" % e
-        )
+        module.fail_json(msg="Unable to connect to Centreon API: %s" % e)
         return
 
     try:
@@ -161,8 +181,7 @@ def main():
         has_changed = True
         if applycfg:
             centreon.pollers.applycfg(instance)
-        module.exit_json(
-            changed=has_changed, result="Command %s deleted" % name)
+        module.exit_json(changed=has_changed, result="Command %s deleted" % name)
         return
 
     try:
@@ -186,7 +205,7 @@ def main():
             cmd.setparam('comment', comment)
             has_changed = True
     except Exception as e:
-        module.fail_json(msg=str(e))
+        module.fail_json(msg=f"Failed to set params {str(e)}: {cmd}")
 
     try:
         if applycfg:
