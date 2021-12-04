@@ -119,6 +119,7 @@ EXAMPLES = '''
 # =============================================
 # Centreon module API Rest
 #
+from ansible_collections.community.centreon.plugins.module_utils import centreon_utils
 
 try:
     from centreonapi.centreon import Centreon
@@ -332,51 +333,15 @@ def main():
 
     #### Macros
     if macros:
-        m_state, m_list = host.getmacro()
-        if m_list is None:
-            m_list = {}
-        for k in macros:
-            if k.get('name').find("$_HOST") == 0:
-                current_macro = m_list.get(k.get('name'))
-            else:
-                current_macro = m_list.get('$_HOST' + k.get('name').upper() + '$')
-            if current_macro is None and (k.get('state') == "present" or k.get('state') is None):
-                s, m = host.setmacro(
-                    name=k.get('name'),
-                    value=k.get('value'),
-                    is_password=k.get('is_password'),
-                    description=k.get('description'))
-                if s:
-                    has_changed = True
-                    data.append("Add macros %s" % k.get('name').upper())
-            elif current_macro is not None and k.get('state') == "absent":
-                s, m = host.deletemacro(k.get('name'))
-                if s:
-                    has_changed = True
-                    data.append("Delete macros %s" % k.get('name'))
-            elif current_macro is not None and (k.get('state') == "present" or k.get('state') is None):
-                if not current_macro.value == k.get('value')\
-                        or not int(current_macro.is_password) == int(k.get('is_password', 0))\
-                        or not current_macro.description == k.get('description', ''):
-                    s, m = host.setmacro(
-                        name=k.get('name'),
-                        value=k.get('value'),
-                        is_password=k.get('is_password'),
-                        description=k.get('description'))
-                    if s:
-                        has_changed = True
-                        data.append("Update macros %s" % k.get('name'))
+        has_changed = centreon_utils.update_macros(host, macros, data)
 
     #### Params
     if params:
-        _, _ = host.getparams()
-        for k in params:
-            if k.get('value') != host.params[k.get('name')]:
-                s, h = host.setparam(k.get('name'), k.get('value'))
-                if s:
-                    has_changed = True
-                else:
-                    module.fail_json(msg='Unable to set param %s: %s' % (k.get('name'), h), changed=has_changed)
+        try:
+            has_changed = centreon_utils.update_params(host, params, data)
+        except Exception as e:
+            module.fail_json(msg=str(e), changed=has_changed)
+            return
 
     if applycfg and has_changed:
         poller.applycfg()
