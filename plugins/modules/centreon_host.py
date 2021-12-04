@@ -145,6 +145,8 @@ def main():
             hostgroups=dict(type=list, default=None),
             params=dict(type=list, default=None),
             macros=dict(type=list, default=None),
+            contacts=dict(type=list, default=None),
+            contactgroups=dict(type=list, default=None),
             state=dict(default='present', choices=['present', 'absent']),
             status=dict(default='enabled', choices=['enabled', 'disabled']),
             applycfg=dict(default=True, type='bool'),
@@ -166,6 +168,8 @@ def main():
     hostgroups = module.params["hostgroups"]
     params = module.params["params"]
     macros = module.params["macros"]
+    contacts = module.params["contacts"]
+    contactgroups = module.params["contactgroups"]
     state = module.params["state"]
     status = module.params["status"]
     applycfg = module.params["applycfg"]
@@ -336,16 +340,36 @@ def main():
                 else:
                     module.fail_json(msg='Unable to del hostTemplate: %s' % del_host_template, changed=has_changed)
 
+    #### Contacts
+    if contacts:
+        try:
+            has_changed = centreon_utils.update_contacts(host, contacts, data)
+        except Exception as e:
+            module.fail_json(msg=f"Failed to update contacts: {str(e)}", changed=has_changed)
+            return
+
+    #### Contacts Groups
+    if contactgroups:
+        try:
+            has_changed = centreon_utils.update_contactgroups(host, contactgroups, data)
+        except Exception as e:
+            module.fail_json(msg=f"Failed to update contact groups: {str(e)}", changed=has_changed)
+            return
+
     #### Macros
     if macros:
-        has_changed = centreon_utils.update_macros(host, macros, data)
+        try:
+            has_changed = centreon_utils.update_macros(host, macros, data)
+        except Exception as e:
+            module.fail_json(msg=f"Failed to update macros: {str(e)}", changed=has_changed)
+            return
 
     #### Params
     if params:
         try:
             has_changed = centreon_utils.update_params(host, params, data)
         except Exception as e:
-            module.fail_json(msg=str(e), changed=has_changed)
+            module.fail_json(msg=f"Failed to update params: {str(e)}", changed=has_changed)
             return
 
     if applycfg and has_changed:

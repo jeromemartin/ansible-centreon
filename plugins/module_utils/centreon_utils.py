@@ -59,3 +59,61 @@ def update_params(obj, params, data):
                 return True
             else:
                 raise Exception(f'Unable to set param {pname}: {h}')
+
+
+def update_contacts(obj, contacts, data):
+    has_changed = False
+    m_state, m_list = obj.getcontact()
+    if m_list is None:
+        m_list = {}
+
+    for k in contacts:
+        contact_name = k.get('name')
+        contact_state = k.get('state', "present")
+        current_contact = m_list.get(contact_name)
+
+        if current_contact is None and contact_state == "present":
+            s, m = obj.addcontact(name=contact_name)
+            if s:
+                has_changed = True
+                data.append(f"Add contact {contact_name}")
+            else:
+                raise Exception(f'Unable to set contact {contact_name}: {m}')
+        elif current_contact is not None and contact_state == "absent":
+            s, m = obj.deletecontact(contact_name)
+            if s:
+                has_changed = True
+                data.append(f"Delete contact {contact_name}")
+            else:
+                raise Exception('Unable to delete contact %s: %s' % (contact_name, m))
+
+    return has_changed
+
+
+def update_contactgroups(obj, contactgroups, data):
+    has_changed = False
+    m_state, m_list = obj.getcontactgroup()
+    if m_list is None:
+        m_list = {}
+
+    for k in contactgroups:
+        contact_name = k.get('name')
+        contact_state = k.get('state', "present")
+        current_contact = m_list.get(contact_name)
+
+        if current_contact is None and contact_state == "present":
+            s, m = obj.addcontactgroup(name=contact_name)
+            if s:
+                has_changed = True
+                data.append(f"Add contact {contact_name}")
+            else:
+                raise Exception(f'Unable to set contact group {contact_name}: {m}')
+        elif current_contact is not None and contact_state == "absent":
+            s, m = obj.deletecontactgroup(contact_name)
+            if s:
+                has_changed = True
+                data.append(f"Delete contact group {contact_name}")
+            else:
+                raise Exception('Unable to delete contact group %s: %s' % (contact_name, m))
+
+    return has_changed
