@@ -3,6 +3,7 @@
 
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule
+import packaging.version
 
 ANSIBLE_METADATA = {
     'status': ['preview'],
@@ -77,6 +78,7 @@ EXAMPLES = '''
 
 try:
     from centreonapi.centreon import Centreon
+    from centreonapi import __version__ as centreonapi_version
 except ImportError:
     centreonapi_found = False
 else:
@@ -97,7 +99,7 @@ def main():
         )
     )
 
-    if not centreonapi_found:
+    if not centreonapi_found or packaging.version.parse(centreonapi_version) < packaging.version.parse("0.2.0"):
         module.fail_json(msg="Python centreonapi module is required")
 
     url      = module.params["url"]
