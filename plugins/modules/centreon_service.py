@@ -9,12 +9,94 @@ ANSIBLE_METADATA = { 'status': ['preview'],
                      'version': '0.1'}
 
 DOCUMENTATION = '''
+---
+module: centreon_command
+version_added: "2.8"
+description: Manage Centreon commands.
+short_description: Manage Centreon services
 
-
+options:
+  url:
+    description:
+      - Centreon URL
+    required: True
+  username:
+    description:
+      - Centreon API username
+    required: True
+  password:
+    description:
+      - Centreon API username's password
+    required: True
+  instance:
+    description:
+      - Poller instance
+    default: Central
+  applycfg:
+    description:
+      - Apply configuration on poller
+    default: True
+    choices: ['True','False']
+  validate_certs:
+    type: bool
+    default: yes
+    description:
+      - If C(no), SSL certificates will not be validated.
+  name:
+    description:
+      - Service name
+    type: str
+    required: True
+  host:
+    description: 
+      - Concerned host
+    type: str
+    required: True
+  servicetemplate:
+    description:
+      - Service template name
+    type: str
+    required: True
+  params:
+    description:
+      - Config specific parameter (dict)
+  macros:
+    description:
+      - Set Host Macros (dict)
+  state:
+    description:
+      - Create / Delete service on Centreon
+    default: present
+    choices: ['present', 'absent']
+  status:
+    description:
+      - Enable/disable service
+    default: enabled
+    choices: ['enabled', 'disabled']
+requirements:
+  - Python Centreon API
+author:
+    - Guillaume Watteeux
+    - Jérôme Martin
 '''
 
 EXAMPLES = '''
-
+- community.centreon.centreon_service:
+    url: "{{ centreon_url }}"
+    username: "{{ centreon_api_user }}"
+    password: "{{ centreon_api_pass }}"
+    host: "{{ ansible_host }}"
+    name: "Disk"
+    servicetemplate: "OS-Linux-Disks-NRPE3"
+    macros:
+      - name: FILTERMOUNTPOINT
+        value: "/"
+      - name: EXTRAOPTIONS
+        value: "--filter-type=ext4"
+    instance: Central
+    status: enabled
+    state: present
+    applycfg: True
 '''
 
 # =============================================
