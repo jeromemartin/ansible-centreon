@@ -3,16 +3,16 @@
 
 import packaging.version
 
-ANSIBLE_METADATA = { 'status': ['preview'],
-                     'supported_by': 'community',
-                     'metadata_version': '0.1',
-                     'version': '0.1'}
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'metadata_version': '0.1',
+                    'version': '0.1'}
 
 DOCUMENTATION = '''
 ---
-module: centreon_command
+module: centreon_service
 version_added: "2.8"
-description: Manage Centreon commands.
+description: Manage Centreon services.
 short_description: Manage Centreon services
 
 options:
@@ -200,9 +200,7 @@ def main():
             has_changed = True
             if applycfg:
                 poller.applycfg()
-            module.exit_json(
-                changed=has_changed, result=f"Service {name} for host {host} deleted"
-            )
+            module.exit_json(changed=has_changed, result=f"Service {name} for host {host} deleted")
         else:
             module.fail_json(msg='State: %s' % del_res, changed=has_changed)
 
@@ -218,7 +216,7 @@ def main():
         e_state, e_res = service.enable()
         if e_state:
             has_changed = True
-            data.append("Host enabled")
+            data.append("Service enabled")
         else:
             module.fail_json(msg=f'Unable to enable service {name} for host {host}: {e_state}', changed=has_changed)
 
