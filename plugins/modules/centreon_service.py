@@ -20,9 +20,10 @@ EXAMPLES = '''
 # =============================================
 # Centreon module API Rest
 #
+from ansible.module_utils.basic import AnsibleModule
 
 # import module snippets
-from ansible.module_utils.basic import *
+from ansible_collections.community.centreon.plugins.module_utils import centreon_utils
 
 try:
     from centreonapi.centreon import Centreon
@@ -34,22 +35,21 @@ else:
 
 
 def main():
-
     module = AnsibleModule(
         argument_spec=dict(
             url=dict(required=True),
             username=dict(default='admin', no_log=True),
             password=dict(default='centreon', no_log=True),
-            name=dict(default=None),
+            name=dict(required=True),
             host=dict(required=True),
-            servicetemplate=dict(default=None),
-            description=dict(default=None),
-            param=dict(type='list', default=None),
+            servicetemplate=dict(required=True),
+            params=dict(type='list', default=None),
             macros=dict(type='list', default=None),
             instance=dict(default='Central'),
-            state=dict(default='present', choices=['present','absent']),
+            state=dict(default='present', choices=['present', 'absent']),
             status=dict(default='enabled', choices=['enabled', 'disabled']),
-            applycfg=dict(default=True, type='bool')
+            applycfg=dict(default=True, type='bool'),
+            validate_certs=dict(default=True, type='bool'),
         )
     )
 
@@ -62,26 +62,104 @@ def main():
     name = module.params["name"]
     host = module.params["host"]
     servicetemplate = module.params["servicetemplate"]
-    description = module.params["description"]
     params = module.params["params"]
     macros = module.params["macros"]
     instance = module.params["instance"]
     state = module.params["state"]
     status = module.params["status"]
     applycfg = module.params["applycfg"]
+    validate_certs = module.params["validate_certs"]
 
     has_changed = False
 
     try:
-        centreon = Centreon(url, username, password)
+        centreon = Centreon(url, username, password, check_ssl=validate_certs)
     except Exception as e:
-        module.fail_json(msg="Unable to cpnnect to Centreon API: %s" % e.message)
+        module.fail_json(msg="Unable to connect to Centreon API: %s" % str(e))
+        return
 
     try:
-        if not centreon.exists_poller(instance):
-            module.fail_json(msg="Poller '%s' does not exists" % instance)
-    except Exception:
-        module.fail_json(msg="Unable to get poller list")
+        st, poller = centreon.pollers.get(instance)
+    except Exception as e:
+        module.fail_json(msg="Unable to get pollers: {}".format(e))
+        return
 
-    # on exist service ------
+    if not st and poller is None:
+        module.fail_json(msg="Poller '%s' does not exists" % instance)
+    elif not st:
+        module.fail_json(msg="Unable to get poller list %s " % poller)
+
     data = []
+    service_state, service = centreon.services.get(host, name)
+
+    if not service_state and state == "present":
+        try:
+            data.append(f"Add '{name}'  '{host}', '{instance}', '{servicetemplate}'")
+            service_state, res = centreon.services.add(host, name, servicetemplate)
+            if not service_state:
+                module.fail_json(msg=f"Unable to create service {name} for host {host}: {res}", changed=has_changed)
+                return
+
+            # Apply the host templates for create associate services
+            service_state, service = centreon.services.get(host, name)
+            has_changed = True
+            data.append(f"Added service: {name} on {host}")
+        except Exception as e:
+            module.fail_json(msg='Create: %s - %s' % (e, data), changed=has_changed)
+            return
+
+    if not service_state:
+        module.fail_json(msg=f"Unable to find service {name} for host {host}: {data}", changed=has_changed)
+        return
+
+    if state == "absent":
+        del_state, del_res = centreon.services.delete(name, host)
+        if del_state:
+            has_changed = True
+            if applycfg:
+                poller.applycfg()
+            module.exit_json(
+                changed=has_changed, result=f"Service {name} for host {host} deleted"
+            )
+        else:
+            module.fail_json(msg='State: %s' % del_res, changed=has_changed)
+
+    if status == "disabled" and int(service.activate) == 1:
+        d_state, d_res = service.disable()
+        if d_state:
+            has_changed = True
+            data.append("Service disabled")
+        else:
+            module.fail_json(msg=f'Unable to disable service {name} for host {host}: {d_state}', changed=has_changed)
+
+    if status == "enabled" and int(service.activate) == 0:
+        e_state, e_res = service.enable()
+        if e_state:
+            has_changed = True
+            data.append("Host enabled")
+        else:
+            module.fail_json(msg=f'Unable to enable service {name} for host {host}: {e_state}', changed=has_changed)
+
+    #### Macros
+    if macros:
+        try:
+            has_changed = centreon_utils.update_macros(service, macros, data)
+        except Exception as e:
+            module.fail_json(msg=str(e), changed=has_changed)
+            return
+
+    #### Params
+    if params:
+        try:
+            has_changed = centreon_utils.update_params(service, params, data)
+        except Exception as e:
+            module.fail_json(msg=str(e), changed=has_changed)
+            return
+
+    if applycfg and has_changed:
+        poller.applycfg()
+    module.exit_json(changed=has_changed, msg=data)
+
+
+if __name__ == '__main__':
+    main()
