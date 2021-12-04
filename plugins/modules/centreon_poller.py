@@ -54,7 +54,7 @@ author:
 
 EXAMPLES = '''
 # Add host
- - centreon_poller:
+ - community.centreon.centreon_poller:
      url: 'https://centreon.company.net/centreon'
      username: 'ansible_api'
      password: 'strong_pass_from_vault'

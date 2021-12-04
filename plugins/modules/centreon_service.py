@@ -6,7 +6,7 @@ import packaging.version
 ANSIBLE_METADATA = {'status': ['preview'],
                     'supported_by': 'community',
                     'metadata_version': '0.1',
-                    'version': '0.1'}
+                    'version': '0.2'}
 
 DOCUMENTATION = '''
 ---

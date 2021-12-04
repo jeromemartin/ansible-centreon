@@ -15,8 +15,8 @@ DOCUMENTATION = '''
 ---
 module: centreon_hostgroup
 version_added: "2.2"
-description: Manage Centreon hostgroupups.
-short_description: Manage Centreon hostgroupups
+description: Manage Centreon hostgroups.
+short_description: Manage Centreon hostgroups
 
 options:
   url:
@@ -48,11 +48,12 @@ requirements:
   - Python Centreon API
 author:
     - Guillaume Watteeux
+    - Jérôme Martin
 '''
 
 EXAMPLES = '''
-# Add host
-- centreon_hostgroup:
+# Add host group
+- community.centreon.centreon_hostgroup:
     url: 'https://centreon.company.net/centreon'
     username: 'ansible_api'
     password: 'strong_pass_from_vault'
@@ -63,7 +64,7 @@ EXAMPLES = '''
     state: present
 
 # Delete host
-- centreon_hostgroup:
+- community.centreon.centreon_hostgroup:
     url: 'https://centreon.company.net/centreon'
     username: 'ansible_api'
     password: 'strong_pass_from_vault'
