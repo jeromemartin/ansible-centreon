@@ -136,7 +136,7 @@ def main():
     )
 
     if not centreonapi_found or packaging.version.parse(centreonapi_version) < packaging.version.parse("0.2.0"):
-        module.fail_json(msg="Python centreonapi module is required")
+        module.fail_json(msg="Python centreonapi >= 0.2.0 module is required")
 
     url = module.params["url"]
     username = module.params["username"]

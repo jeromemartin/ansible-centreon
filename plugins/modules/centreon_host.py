@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import packaging.version
 # import module snippets
 from ansible.module_utils.basic import AnsibleModule
-import packaging.version
 
 ANSIBLE_METADATA = {
     'status': ['preview'],
@@ -153,7 +153,7 @@ def main():
     )
 
     if not centreonapi_found or packaging.version.parse(centreonapi_version) < packaging.version.parse("0.2.0"):
-        module.fail_json(msg="Python centreonapi module is required (>0.1.0)")
+        module.fail_json(msg="Python centreonapi >= 0.2.0 module is required")
 
     url = module.params["url"]
     username = module.params["username"]
